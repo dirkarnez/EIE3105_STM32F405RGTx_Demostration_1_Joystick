@@ -1,0 +1,67 @@
+.settings/*
+!.settings/org.eclipse.core.resources.prefs
+Debug
+
+RobotCar.list
+RobotCar.bin
+
+# Prerequisites
+*.d
+
+*.cyclo
+
+# Listing files
+*.cod
+*.htm
+*.i
+*.lst
+*.map
+*.m51
+*.m66
+# define exception below if needed
+*.scr
+
+# Object and HEX files
+*.axf
+*.b[0-3][0-9]
+*.hex
+*.d
+*.crf
+*.elf
+*.hex
+*.h86
+*.lib
+*.obj
+*.o
+*.sbr
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
