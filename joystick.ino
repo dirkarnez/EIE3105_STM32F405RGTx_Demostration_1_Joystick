@@ -1,5 +1,7 @@
 /* Funduino Joystick Shield Example
 
+https://protosupplies.com/product/funduino-joystick-shield-v1-a/
+
 This program simply captures all of the inputs of the Funduino Joystick Shield buttons and
 joystick every second and displays them in the Serial Monitor Window.  
 The Arduino pins below are defined by the shield and cannot be changed.
