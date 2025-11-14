@@ -1,3 +1,4 @@
 EIE3105_STM32F405RGTx_Demostration_1_Joystick
 =============================================
-[EIE3105 and EIE3106 Demonstration Guideline.pdf](https://github.com/dirkarnez/EIE3105-2024-25-Robot-Car/blob/main/EIE3105%20and%20EIE3106%20Demonstration%20Guideline.pdf)
+- [EIE3105 and EIE3106 Demonstration Guideline.pdf](https://github.com/dirkarnez/EIE3105-2024-25-Robot-Car/blob/main/EIE3105%20and%20EIE3106%20Demonstration%20Guideline.pdf)
+- [STM32 Libraries and Samples](https://sourcevu.sysprogs.com/stm32)
