@@ -200,6 +200,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 
+void substr(char *dest, const char *src, unsigned int start, unsigned int count) {
+	/*
+		 //  char s[] = "121111110231023" ;
+		 //  char t[1];
+		 //  substr(t, s, 1 , 1 );
+	*/
+    strncpy(dest, src + start, count);
+    dest[count] = 0;
+}
+
 /* USER CODE END 0 */
 
 /**
