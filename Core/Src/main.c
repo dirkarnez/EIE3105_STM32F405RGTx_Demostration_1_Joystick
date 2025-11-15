@@ -60,7 +60,7 @@ uint16_t adc_voltage_buffer	[WINDOW_SIZE] = { 0 }; // Buffer for voltage reading
 uint16_t adc_current_buffer[WINDOW_SIZE] = { 0 }; // Buffer for current readings
 uint8_t adc_index = 0;  // Current index for buffer
 uint16_t smoothed_ADCArray[2]; // Array to store the smoothed voltage and current values
-uint8_t tx_buffer = 0; // Buffer to store received data
+char tx_buffer[15]; // Buffer to store received data
 
 // OLED Display
 char buffer[20]; // String buffer for formatted output on the OLED screen
@@ -143,6 +143,7 @@ void breathing_blue_update() {
 		blue_brightness = 0;  // Clamp to 0 to avoid underflow
 	}
 }
+
 // Timer interrupt
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	// Update the breathing light
@@ -150,6 +151,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		breathing_blue_update();
 	}
 }
+
 // Callback function of SysTick
 void HAL_SYSTICK_Callback(void) {
 	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4); // 1ms toggle pin
@@ -157,13 +159,14 @@ void HAL_SYSTICK_Callback(void) {
 
 	// Tesing only
 	if (ms_count < 2000) {
-		motor(20000, 20000); // Motor ON for 2000 ms
+		// motor(20000, 20000); // Motor ON for 2000 ms
 	} else if (ms_count < 4000) {
 		motor(0, 0); // Motor OFF for 2000 ms
 	} else {
 		ms_count = 0; // Reset counter after 4000 ms
 	}
 }
+
 // ADC Callback
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	if (hadc->Instance == ADC1)  // Check which ADC triggered the interrupt
@@ -196,7 +199,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart->Instance == USART2)
 	{
 		// memset(tx_buffer, 0, sizeof(tx_buffer));
-		HAL_UART_Receive_IT(&huart2, &tx_buffer, 1); // Restart the reception process
+		HAL_UART_Receive_IT(&huart2, &tx_buffer, sizeof(tx_buffer)); // Restart the reception process
 	}
 }
 
@@ -283,7 +286,13 @@ int main(void)
 
 	HAL_Delay(1000);
 
-    HAL_UART_Receive_IT(&huart2, &tx_buffer, 1);
+	memset(tx_buffer,'$',sizeof(tx_buffer));
+
+    HAL_UART_Receive_IT(&huart2, &tx_buffer, sizeof(tx_buffer));
+
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -312,7 +321,7 @@ int main(void)
 //		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
 //		ssd1306_WriteString(buffer, Font_11x18, White);
 
-		snprintf(buffer, sizeof(buffer), "%c", tx_buffer);
+		snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
 		ssd1306_SetCursor(0, 0);
 		ssd1306_WriteString(buffer, Font_11x18, White);
