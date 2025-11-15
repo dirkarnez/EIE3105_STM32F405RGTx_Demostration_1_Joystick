@@ -29,6 +29,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include <math.h>
 #include <ssd1306.h>
 #include <ssd1306_fonts.h>
@@ -310,18 +311,18 @@ int main(void)
 //		ssd1306_SetCursor(0, 0);  // Set cursor to the top of the display
 //		ssd1306_WriteString(buffer, Font_11x18, White);
 //
-//		snprintf(buffer, sizeof(buffer), "L: %"PRIu32"", __HAL_TIM_GET_COUNTER(&htim2));
-//		ssd1306_SetCursor(0, 15); // Set cursor below the voltage/current display
-//		ssd1306_WriteString(buffer, Font_11x18, White);
-//
-//		snprintf(buffer, sizeof(buffer), "R: %"PRIu32"", __HAL_TIM_GET_COUNTER(&htim5));
-//		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
-//		ssd1306_WriteString(buffer, Font_11x18, White);
-
-		snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
-
-		ssd1306_SetCursor(0, 0);
+		snprintf(buffer, sizeof(buffer), "L: %"PRIu32"", __HAL_TIM_GET_COUNTER(&htim2));
+		ssd1306_SetCursor(0, 0); // Set cursor below the voltage/current display
 		ssd1306_WriteString(buffer, Font_11x18, White);
+
+		snprintf(buffer, sizeof(buffer), "R: %"PRIu32"", __HAL_TIM_GET_COUNTER(&htim5));
+		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
+		ssd1306_WriteString(buffer, Font_11x18, White);
+
+		//snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
+
+		// ssd1306_SetCursor(0, 0);
+		// ssd1306_WriteString(buffer, Font_11x18, White);
 		ssd1306_UpdateScreen();
 		// Write your code below
 
