@@ -286,12 +286,9 @@ int main(void)
 
 	HAL_Delay(1000);
 
-	memset(tx_buffer,'$',sizeof(tx_buffer));
+	memset(tx_buffer,'\0', sizeof(tx_buffer));
 
     HAL_UART_Receive_IT(&huart2, &tx_buffer, sizeof(tx_buffer));
-
-
-
 
   /* USER CODE END 2 */
 
