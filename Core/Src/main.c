@@ -55,7 +55,7 @@
 /* USER CODE BEGIN PV */
 // ADC Measurements
 uint16_t ADC1Array[2];  // Array to store ADC readings for voltage and current
-uint16_t ADC2Array[2];
+uint16_t ADC2Array[5];
 // Sliding Window (Moving Average) for voltage and current
 #define WINDOW_SIZE 100  // Number of readings to average
 uint16_t adc_voltage_buffer	[WINDOW_SIZE] = { 0 }; // Buffer for voltage readings
@@ -193,8 +193,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 			current_sum += adc_current_buffer[i];
 		}
 		smoothed_ADC1Array[1] = current_sum / WINDOW_SIZE; // Store smoothed current
-	} else if (hadc->Instance == ADC2) {
-		// map()
 	}
 }
 
@@ -203,7 +201,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart->Instance == USART2)
 	{
 		// memset(tx_buffer, 0, sizeof(tx_buffer));
-		HAL_UART_Receive_IT(&huart2, &tx_buffer, sizeof(tx_buffer)); // Restart the reception process
+		HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer)); // Restart the reception process
 	}
 }
 
@@ -274,7 +272,7 @@ int main(void)
 
 	// ADC Values for voltage and current
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC1Array, 2);
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC2Array, 2);
+	HAL_ADC_Start_DMA(&hadc2, (uint32_t*) ADC2Array, 5);
 
 
 	HAL_TIM_Base_Start_IT(&htim13); // LED PB5
@@ -297,7 +295,7 @@ int main(void)
 
 	memset(tx_buffer,'\0', sizeof(tx_buffer));
 
-    HAL_UART_Receive_IT(&huart2, &tx_buffer, sizeof(tx_buffer));
+    HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
 
   /* USER CODE END 2 */
 
@@ -329,6 +327,8 @@ int main(void)
 		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
 		ssd1306_WriteString(buffer, Font_11x18, White);
 		*/
+
+		snprintf(buffer, sizeof(buffer), "%d-%d", ADC2Array[0], ADC2Array[1]);
 
 		//snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
