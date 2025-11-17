@@ -328,6 +328,7 @@ int main(void)
 		ssd1306_WriteString(buffer, Font_11x18, White);
 		*/
 
+    // input capture: https://github.com/dirkarnez/arduino-uno-hc-sr04/blob/main/main/main.ino
 		snprintf(buffer, sizeof(buffer), "%d-%d", ADC2Array[0], ADC2Array[1]);
 
 		//snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
