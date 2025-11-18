@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <math.h>
 #include <ssd1306.h>
 #include <ssd1306_fonts.h>
@@ -71,6 +72,9 @@ char buffer[20]; // String buffer for formatted output on the OLED screen
 uint16_t WS2812_RGB_Buff[74] = { 0 }; // Buffer for RGB LED data
 int blue_brightness = 0;  // Initial brightness value
 int direction = 1; // 1 = increasing, -1 = decreasing
+
+bool is_capturing = false;
+uint32_t captured_value = 0;
 
 // Delay counter
 uint32_t ms_count = 0;
@@ -151,6 +155,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	// Update the breathing light
 	if (htim->Instance == TIM13) {
 		breathing_blue_update();
+	}
+}
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
+	if (htim->Instance == TIM8 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
+		if (!is_capturing) {
+			captured_value = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+			is_capturing = true;
+			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
+		} else if (is_capturing) {
+
+		}
 	}
 }
 
@@ -261,6 +277,7 @@ int main(void)
   MX_TIM13_Init();
   MX_USART2_UART_Init();
   MX_ADC2_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
 	// Start right PWM channels
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
@@ -278,11 +295,12 @@ int main(void)
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) ADC1Array, 2);
 	HAL_ADC_Start_DMA(&hadc2, (uint32_t*) ADC2Array, 5);
 
-
 	HAL_TIM_Base_Start_IT(&htim13); // LED PB5
 
 	HAL_ADC_Start_IT(&hadc1); // ADC interrupt handler
 	HAL_ADC_Start_IT(&hadc2); // ADC interrupt handler
+
+	HAL_TIM_IC_Start_IT(&htim8, TIM_CHANNEL_1);
 
 	ssd1306_Init();
 	ssd1306_Fill(White);
@@ -332,7 +350,6 @@ int main(void)
 		ssd1306_WriteString(buffer, Font_11x18, White);
 		*/
 
-    // input capture: https://github.com/dirkarnez/arduino-uno-hc-sr04/blob/main/main/main.ino
 		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c",
 				tracker_marking(ADC2Array[0]),
 				tracker_marking(ADC2Array[1]),
