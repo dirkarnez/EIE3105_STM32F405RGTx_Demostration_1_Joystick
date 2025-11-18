@@ -73,8 +73,15 @@ uint16_t WS2812_RGB_Buff[74] = { 0 }; // Buffer for RGB LED data
 int blue_brightness = 0;  // Initial brightness value
 int direction = 1; // 1 = increasing, -1 = decreasing
 
-bool is_capturing = false;
-uint32_t captured_value = 0;
+bool has_captured_ultrasonic_rising_edge = false;
+uint32_t rising_edge_instant = 0;
+uint32_t falling_edge_instant = 0;
+
+#define ECHO_Pin GPIO_PIN_6
+#define ECHO_GPIO_Port GPIOC
+
+#define TRIG_Pin GPIO_PIN_7
+#define TRIG_GPIO_Port GPIOC
 
 // Delay counter
 uint32_t ms_count = 0;
@@ -158,31 +165,61 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	}
 }
 
+uint32_t ultrasonic_counter = 0;
+
+void ultrasonic_start() {
+	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
+	ultrasonic_counter = 0;
+}
+
+void ultrasonic_wait_non_blocking() {
+	if (ultrasonic_counter < 10) {
+		// wait for 10us
+		return;
+	}
+
+	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
+
+	__HAL_TIM_SET_CAPTUREPOLARITY(&htim8, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+	HAL_TIM_IC_Start_IT(&htim8, TIM_CHANNEL_1);
+}
+
+float distance = 0.0f;
+
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 	if (htim->Instance == TIM8 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-		if (!is_capturing) {
-			captured_value = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-			is_capturing = true;
+		if (!has_captured_ultrasonic_rising_edge) {
+			rising_edge_instant = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+			has_captured_ultrasonic_rising_edge = true;
 			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
-		} else if (is_capturing) {
-
+            HAL_TIM_IC_Start_IT(htim, TIM_CHANNEL_1);
+		} else if (has_captured_ultrasonic_rising_edge) {
+			falling_edge_instant = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+			__HAL_TIM_SET_COUNTER(htim, 0);  // reset counter
+			HAL_TIM_IC_Stop_IT(htim, TIM_CHANNEL_1);
+			distance = (((t_falling > t_rising) ? 0 : 0xFFFF) + falling_edge_instant - rising_edge_instant) * .017;  // cm
+			has_captured_ultrasonic_rising_edge = false;
 		}
 	}
 }
 
 // Callback function of SysTick
 void HAL_SYSTICK_Callback(void) {
-	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4); // 1ms toggle pin
+//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4); // 1ms toggle pin
 	ms_count++;
+	ultrasonic_counter++;
 
-	// Tesing only
-	if (ms_count < 2000) {
-		// motor(20000, 20000); // Motor ON for 2000 ms
-	} else if (ms_count < 4000) {
-		motor(0, 0); // Motor OFF for 2000 ms
-	} else {
-		ms_count = 0; // Reset counter after 4000 ms
-	}
+
+
+//	// Tesing only
+//	if (ms_count < 2000) {
+//		// motor(20000, 20000); // Motor ON for 2000 ms
+//	} else if (ms_count < 4000) {
+//		motor(0, 0); // Motor OFF for 2000 ms
+//	} else {
+//		ms_count = 0; // Reset counter after 4000 ms
+//	}
 }
 
 // ADC Callback
@@ -350,12 +387,16 @@ int main(void)
 		ssd1306_WriteString(buffer, Font_11x18, White);
 		*/
 
-		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c",
+		ultrasonic_start();
+		ultrasonic_wait_non_blocking();
+
+		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%.2f",
 				tracker_marking(ADC2Array[0]),
 				tracker_marking(ADC2Array[1]),
 				tracker_marking(ADC2Array[2]),
 				tracker_marking(ADC2Array[3]),
-				tracker_marking(ADC2Array[4])
+				tracker_marking(ADC2Array[4]),
+				distance
 		);
 
 		//snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
