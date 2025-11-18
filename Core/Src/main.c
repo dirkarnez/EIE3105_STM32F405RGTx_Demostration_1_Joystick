@@ -215,6 +215,10 @@ void substr(char *dest, const char *src, unsigned int start, unsigned int count)
     dest[count] = 0;
 }
 
+char tracker_marking(uint16_t adc_value) {
+	return adc_value < 2048 ? '-' : '*';
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -329,7 +333,13 @@ int main(void)
 		*/
 
     // input capture: https://github.com/dirkarnez/arduino-uno-hc-sr04/blob/main/main/main.ino
-		snprintf(buffer, sizeof(buffer), "%d-%d", ADC2Array[0], ADC2Array[1]);
+		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c",
+				tracker_marking(ADC2Array[0]),
+				tracker_marking(ADC2Array[1]),
+				tracker_marking(ADC2Array[2]),
+				tracker_marking(ADC2Array[3]),
+				tracker_marking(ADC2Array[4])
+		);
 
 		//snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
