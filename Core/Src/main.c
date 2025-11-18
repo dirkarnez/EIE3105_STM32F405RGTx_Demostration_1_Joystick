@@ -167,27 +167,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 uint32_t ultrasonic_counter = 0;
 
-void ultrasonic_start() {
-	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
-	ultrasonic_counter = 0;
-}
-
-void ultrasonic_wait_non_blocking() {
-	if (ultrasonic_counter < 10) {
-		// wait for 10us
-		return;
-	}
-
-	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
-
-	__HAL_TIM_SET_CAPTUREPOLARITY(&htim8, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-	HAL_TIM_IC_Start_IT(&htim8, TIM_CHANNEL_1);
-}
-
 float distance = 0.0f;
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
-	if (htim->Instance == TIM8 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
+	if (htim->Instance == TIM8) {
 		if (!has_captured_ultrasonic_rising_edge) {
 			rising_edge_instant = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
 			has_captured_ultrasonic_rising_edge = true;
@@ -198,8 +181,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
 			__HAL_TIM_SET_COUNTER(htim, 0);  // reset counter
 			HAL_TIM_IC_Stop_IT(htim, TIM_CHANNEL_1);
-			distance = (((t_falling > t_rising) ? 0 : 0xFFFF) + falling_edge_instant - rising_edge_instant) * .017;  // cm
+			distance = (((falling_edge_instant > rising_edge_instant) ? 0 : 0xFFFF) + falling_edge_instant - rising_edge_instant) * .017;  // cm
 			has_captured_ultrasonic_rising_edge = false;
+
+			ultrasonic_counter = 0;
+			HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
 		}
 	}
 }
@@ -209,8 +195,6 @@ void HAL_SYSTICK_Callback(void) {
 //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4); // 1ms toggle pin
 	ms_count++;
 	ultrasonic_counter++;
-
-
 
 //	// Tesing only
 //	if (ms_count < 2000) {
@@ -356,6 +340,9 @@ int main(void)
 
     HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
 
+    ultrasonic_counter = 0;
+    HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -386,9 +373,16 @@ int main(void)
 		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
 		ssd1306_WriteString(buffer, Font_11x18, White);
 		*/
+		if (ultrasonic_counter >= 10) {
+			HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
 
-		ultrasonic_start();
-		ultrasonic_wait_non_blocking();
+			__HAL_TIM_SET_CAPTUREPOLARITY(&htim8, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+			HAL_TIM_IC_Start_IT(&htim8, TIM_CHANNEL_1);
+		}
+
+
+
+		ultrasonic_reset();
 
 		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%.2f",
 				tracker_marking(ADC2Array[0]),
