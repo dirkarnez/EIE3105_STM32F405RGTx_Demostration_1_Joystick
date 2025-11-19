@@ -13,7 +13,7 @@
 
 char buffer[17] = {0}; // 7 buttons + (2 * 10-bit adc) = 7 + (2 * 4) = 15 characters + newline + \0 = 17
 
-void usart_interrupt_init()
+void usart_init_interupt_mode()
 {
 	UCSR0B = (1<<TXEN0) /*enable TX*/ | (1<<RXEN0) /* enable RX */| (1<<UDRIE0) /* Register Empty Interrupt */| (1<<RXCIE0) /* Complete Interrupt Enable */;
 	UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);  // no parity, 1 stop bit, 8-bit data
@@ -60,7 +60,7 @@ ISR(USART_UDRE_vect)
 	i = i % sizeof(buffer);
 };
 
-void adc_init_interupt()
+void adc_init_interupt_mode()
 {
 	/*
 	| REFS1 | REFS0 | Vref            |                               |
@@ -123,8 +123,8 @@ int main(void)
 {
 	DDRC = 0;	   // make Port C an input for ADC input
 
-	adc_init_interupt();
-	usart_interrupt_init();
+	adc_init_interupt_mode();
+	usart_init_interupt_mode();
 
 	sei(); //enable interrupts
 	
