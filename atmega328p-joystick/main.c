@@ -11,7 +11,7 @@
 #define UBRR_VALUE_LOW_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (16UL)))-((double)(1UL))))
 #define UBRR_VALUE_DOUBLE_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (8L)))-((double)(1UL))))
 
-char buffer[10] = {0};
+char buffer[17] = {0}; // 7 buttons + (2 * 10-bit adc) = 7 + (2 * 4) = 15 characters + newline + \0 = 17
 
 void usart_interrupt_init()
 {
@@ -39,7 +39,7 @@ void usart_interrupt_init()
 ISR(ADC_vect){
 	// PORTD = ADCL; //give the low byte to PORTD
 	// PORTB = ADCH; //give the high byte to PORTB
-	snprintf(buffer, sizeof(buffer), "%d\n", ADCL + (ADCH << 8));
+	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", 0, 0, 0, 0, 0, 0, 0, ADCL + (ADCH << 8), 0);
 
 	ADCSRA |= (1<<ADSC); //start conversion
 }
