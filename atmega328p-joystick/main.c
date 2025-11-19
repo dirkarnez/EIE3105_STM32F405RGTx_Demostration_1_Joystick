@@ -35,6 +35,16 @@ void usart_init_interupt_mode()
 // -*/
 
 
+enum MY_ADC
+{
+    ZERO=0, ONE
+} current = ZERO;
+
+// int const JOYSTICK_AXIS_X = A0;
+// int const JOYSTICK_AXIS_Y = A1;
+unsigned int x_axis_adc0 = 0;
+unsigned int y_axis_adc1 = 0;
+
 
 ISR(ADC_vect){
 	// up
@@ -46,8 +56,17 @@ ISR(ADC_vect){
 	// btn
 	// x
 	// y
-	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", 0, 0, 0, 0, 0, 0, 0, ADCL + (ADCH << 8), 0);
-
+	if (current == ZERO) {
+		x_axis_adc0 = ADCL + (ADCH << 8);
+		current = ONE;
+		ADMUX |= (1 << MUX0);
+	} else if (current == ONE) {
+		y_axis_adc1 = ADCL + (ADCH << 8);
+		current = ZERO;
+		ADMUX &= ~(1 << MUX0);
+	}
+	
+	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", 1, 0, 0, 0, 0, 0, 0, x_axis_adc0, y_axis_adc1);
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
@@ -87,7 +106,7 @@ void adc_init_interupt_mode()
 		(0 << MUX3) |  // 3, Analog Channel and Gain Selection Bits
 		(0 << MUX2) |  // 2, Analog Channel and Gain Selection Bits
 		(0 << MUX1) |  // 1, Analog Channel and Gain Selection Bits
-		(0 << MUX0);   // 0, Analog Channel and Gain Selection Bits
+		(current << MUX0);   // 0, Analog Channel and Gain Selection Bits
 		
 
 	ADCSRA =
