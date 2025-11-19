@@ -6,7 +6,7 @@
 #define F_CPU 16000000UL
 
 #define IS_NTH_BIT_ONE(TARGET, NTH) (((TARGET) & (1 << NTH)) == (1 << NTH))
-#define IS_NTH_BIT_ZERO(TARGET, NTH) (((TARGET) >> NTH) & (1) == (0))
+#define IS_NTH_BIT_ZERO(TARGET, NTH) (!(((TARGET) & (1 << NTH)) == (1 << NTH)))
 
 #define SET_NTH_BIT_TO_ZERO(TARGET, NTH) ((TARGET) &= ~(1 << NTH))
 #define SET_NTH_BIT_TO_ONE(TARGET, NTH) ((TARGET) |= (1 << NTH))
@@ -59,9 +59,15 @@ int const LEFT_BTN = 5;
 int const RIGHT_BTN = 3;
 int const E_BTN = 6;
 int const F_BTN = 7;
-int const JOYSTICK_BTN = 8;
+int const JOYSTICK_BTN = 0; // PB0 == D8
 
 bool is_up_pressed = false;
+bool is_right_pressed = false;
+bool is_down_pressed = false;
+bool is_left_pressed = false;
+bool is_e_pressed = false;
+bool is_f_pressed = false;
+bool is_joystick_pressed = false;
 
 ISR(ADC_vect){
 	// up
@@ -84,7 +90,7 @@ ISR(ADC_vect){
 		ADMUX &= ~(1 << MUX0);
 	}
 
-	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", is_up_pressed, 0, 0, 0, 0, 0, 0, x_axis_adc0, y_axis_adc1);
+	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
@@ -160,13 +166,15 @@ int main(void)
 {
 	DDRB = 0;   // make Port B an input
 	DDRD = 0b00000011; // make Port B an input
+
+	// pull up
 	SET_NTH_BIT_TO_ONE(PORTD, UP_BTN);
-// 	int const  = 2;
-// int const DOWN_BTN = 4;
-// int const LEFT_BTN = 5;
-// int const RIGHT_BTN = 3;
-// int const E_BTN = 6;
-// int const F_BTN = 7;
+	SET_NTH_BIT_TO_ONE(PORTD, DOWN_BTN);
+	SET_NTH_BIT_TO_ONE(PORTD, LEFT_BTN);
+	SET_NTH_BIT_TO_ONE(PORTD, RIGHT_BTN);
+	SET_NTH_BIT_TO_ONE(PORTD, E_BTN);
+	SET_NTH_BIT_TO_ONE(PORTD, F_BTN);
+	SET_NTH_BIT_TO_ONE(PORTB, JOYSTICK_BTN);
 
 	DDRC = 0;	   // make Port C an input for ADC input
 
@@ -178,12 +186,21 @@ int main(void)
 	ADCSRA |= (1<<ADSC); //start conversion
 
 	unsigned char current_pd = 0;
+	unsigned char current_pb = 0;
 	
 	while (1)
 	{
 		current_pd = PIND;
+		current_pb = PINB;
+
 		// All buttons have pull-up resistors and pull to ground when pressed.
 		is_up_pressed = IS_NTH_BIT_ZERO(current_pd, UP_BTN);
+		is_right_pressed = IS_NTH_BIT_ZERO(current_pd, RIGHT_BTN);
+		is_down_pressed = IS_NTH_BIT_ZERO(current_pd, DOWN_BTN);
+		is_left_pressed = IS_NTH_BIT_ZERO(current_pd, LEFT_BTN);
+		is_e_pressed = IS_NTH_BIT_ZERO(current_pd, E_BTN);
+		is_f_pressed = IS_NTH_BIT_ZERO(current_pd, F_BTN);
+		is_joystick_pressed = IS_NTH_BIT_ZERO(current_pb, JOYSTICK_BTN);
 	}
 
 	return 0;
