@@ -2,29 +2,55 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdbool.h>
+#include <stdio.h>
 #define F_CPU 16000000UL
 
 #define NORMAL_MODE_VALUE(timer_bit, n_seconds, prescaler) ((int)(((1UL) << (timer_bit)) - ((n_seconds) * ((F_CPU) / (prescaler)))))
 #define CTC_MODE_VALUE(n_seconds, prescaler) ((int)(((n_seconds) * ((F_CPU) / (prescaler))) - (1UL)))
 
-#define __UBRR_VALUE(USART_BAUDRATE) ((int)((((F_CPU) / ((double)(16UL))) + ((double)(USART_BAUDRATE) / ((double)(2UL)))) / (double)(USART_BAUDRATE) - ((double)(1UL))))
+#define UBRR_VALUE_LOW_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (16UL)))-((double)(1UL))))
+#define UBRR_VALUE_DOUBLE_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (8L)))-((double)(1UL))))
 
-/*
-inline __attribute__((always_inline)) int calculate_UBRR() {
-	return 123;
+
+
+void usart_interrupt_init()
+{
+	UCSR0B = (1<<TXEN0) /*enable TX*/ | (1<<RXEN0) /* enable RX */| (1<<UDRIE0) /* Register Empty Interrupt */| (1<<RXCIE0) /* Complete Interrupt Enable */;
+	UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);  // no parity, 1 stop bit, 8-bit data
+	// UBRR0 = UBRR_VALUE_LOW_SPEED(9600);
+	
+
+	UCSR0A = (1<<U2X0); //Double speed mode USART0
+	UBRR0 = UBRR_VALUE_DOUBLE_SPEED(115200);
+
+	// UBRR0L = (uint8_t)(F_CPU/(115200*16L)-1);
+	// UBRR0H = (F_CPU/(115200*16L)-1) >> 8;
+} 
+
+// -UBRRL = (uint8_t)( (F_CPU + BAUD_RATE * 4L) / (BAUD_RATE * 8L) - 1 );
+ 
+// -  UBRRH = (((F_CPU/BAUD_RATE)/16)-1)>>8; 	// set baud rate
+// -  UBRRL = (((F_CPU/BAUD_RATE)/16)-1);
+
+// -https://github.com/search?q=repo%3Aarduino%2FArduinoCore-avr+UBRRL&type=code
+// -*/
+
+
+
+ISR(ADC_vect){
+	// PORTD = ADCL; //give the low byte to PORTD
+	// PORTB = ADCH; //give the high byte to PORTB
+	ADCSRA |= (1<<ADSC); //start conversion
 }
-*/
-/*
-UBRRL = (uint8_t)( (F_CPU + BAUD_RATE * 4L) / (BAUD_RATE * 8L) - 1 );
 
-  UBRRH = (((F_CPU/BAUD_RATE)/16)-1)>>8; 	// set baud rate
-  UBRRL = (((F_CPU/BAUD_RATE)/16)-1);
-	UBRR0L = (uint8_t)(F_CPU/(BAUD_RATE*16L)-1);
-	UBRR0H = (F_CPU/(BAUD_RATE*16L)-1) >> 8;
-https://github.com/search?q=repo%3Aarduino%2FArduinoCore-avr+UBRRL&type=code
-*/
+ISR(USART_UDRE_vect)
+{
+	UDR0 = 'b';
+};
 
-void adc_init()
+char buffer[10] = {0};
+
+void adc_init_interupt()
 {
 	/*
 	| REFS1 | REFS0 | Vref            |                               |
@@ -59,9 +85,10 @@ void adc_init()
 		(0 << ADSC) |  // 6, ADC Start Conversion
 		(0 << ADATE) | // 5, ADC Auto Trigger Enable
 		(0 << ADIF) |  // 4, ADC Interrupt Flag
-		(0 << ADIE) |  // 3, ADC Interrupt Enable
-		// Prescaler below, use 1 1 1 if not time critcal
+		(1 << ADIE) |  // 3, ADC Interrupt Enable
 		/*
+		Prescaler below, use 1 1 1 if not time critcal
+
 		| ADPS2 | ADPS1 | ADPS0 | ADC Clock |
 		|-------|-------|-------|-----------|
 		| 0     | 0     | 0     | Reserved  |
@@ -82,28 +109,32 @@ long map(long x, long in_min, long in_max, long out_min, long out_max) {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+
+// snprintf(buffer, sizeof(buffer), "%d", 10);
+
 int main(void)
 {
-	DDRB = 0xFF;   // make Port B an output
-	DDRD = 0xFF;   // make Port D an output
+	// DDRB = 0xFF;   // make Port B an output
+	// DDRD = 0xFF;   // make Port D an output
 
 	DDRC = 0;	   // make Port C an input for ADC input
 
-	adc_init();
+	adc_init_interupt();
+	usart_interrupt_init();
+
+	sei(); //enable interrupts
 	
-// |-----|-----|-----|-----|-----|-----|-----|-----|
-// | 7   | 6   | 5   | 4   | 3   | 2   | 1   | 0   |
-// |-----|-----|-----|-----|-----|-----|-----|-----|
-// | PB3 | PB2 | PB1 | PB0 | PD3 | PD2 | PD1 | PD0 |
-// |-----|-----|-----|-----|-----|-----|-----|-----|
+	ADCSRA |= (1<<ADSC); //start conversion
+
 	while (1)
 	{
-		ADCSRA |= (1 << ADSC);						// start conversion
-		while ((ADCSRA & (1 << ADIF)) == 0);		// wait for conversion to finish
-		ADCSRA |= (1 << ADIF);  
-		PORTD = ADCL;								// give the low byte to PORTD
-		PORTB = ADCH;								// give the high byte to PORTB
+		// ADCSRA |= (1 << ADSC);						// start conversion
+		// while ((ADCSRA & (1 << ADIF)) == 0);		// wait for conversion to finish
+		// ADCSRA |= (1 << ADIF);  
+		// PORTD = ADCL;								// give the low byte to PORTD
+		// PORTB = ADCH;								// give the high byte to PORTB
 	}
+
 	return 0;
 }
 
@@ -111,21 +142,16 @@ int main(void)
 /*
 
 #include <avr\io.h>
-#include <avr\interrupt.h>
-ISR(ADC_vect){
-PORTD = ADCL; //give the low byte to PORTD
-PORTB = ADCH; //give the high byte to PORTB
-ADCSRA|=(1<<ADSC); //start conversion
-}
+
 int main (void){
 DDRB = 0xFF; //make Port B an output
 DDRD = 0xFF; //make Port D an output
 DDRA = 0; //make Port A an input for ADC input
-sei(); //enable interrupts
+
 ADCSRA= 0x8F; //enable and interrupt select ck/128
 ADMUX= 0xC0; //2.56V Vref and ADC0 single-ended
 //input right-justified data
-ADCSRA|=(1<<ADSC); //start conversion
+
 while (1); //wait forever
 return 0;
 }
