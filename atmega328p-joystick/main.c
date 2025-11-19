@@ -11,14 +11,14 @@
 #define UBRR_VALUE_LOW_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (16UL)))-((double)(1UL))))
 #define UBRR_VALUE_DOUBLE_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (8L)))-((double)(1UL))))
 
-
+char buffer[10] = {0};
 
 void usart_interrupt_init()
 {
 	UCSR0B = (1<<TXEN0) /*enable TX*/ | (1<<RXEN0) /* enable RX */| (1<<UDRIE0) /* Register Empty Interrupt */| (1<<RXCIE0) /* Complete Interrupt Enable */;
 	UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);  // no parity, 1 stop bit, 8-bit data
 	// UBRR0 = UBRR_VALUE_LOW_SPEED(9600);
-	
+
 	UCSR0A = (1<<U2X0); //Double speed mode USART0
 	UBRR0 = UBRR_VALUE_DOUBLE_SPEED(115200);
 
@@ -39,15 +39,19 @@ void usart_interrupt_init()
 ISR(ADC_vect){
 	// PORTD = ADCL; //give the low byte to PORTD
 	// PORTB = ADCH; //give the high byte to PORTB
+	snprintf(buffer, sizeof(buffer), "%d\n", ADCL + (ADCH << 8));
+
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
+unsigned int i = 0;
+
 ISR(USART_UDRE_vect)
 {
-	UDR0 = 'b';
+	UDR0 = buffer[i];
+	i++;
+	i = i % sizeof(buffer);
 };
-
-char buffer[10] = {0};
 
 void adc_init_interupt()
 {
