@@ -5,6 +5,12 @@
 #include <stdio.h>
 #define F_CPU 16000000UL
 
+#define IS_NTH_BIT_ONE(TARGET, NTH) (((TARGET) & (1 << NTH)) == (1 << NTH))
+#define IS_NTH_BIT_ZERO(TARGET, NTH) (((TARGET) >> NTH) & (1) == (0))
+
+#define SET_NTH_BIT_TO_ZERO(TARGET, NTH) ((TARGET) &= ~(1 << NTH))
+#define SET_NTH_BIT_TO_ONE(TARGET, NTH) ((TARGET) |= (1 << NTH))
+
 #define NORMAL_MODE_VALUE(timer_bit, n_seconds, prescaler) ((int)(((1UL) << (timer_bit)) - ((n_seconds) * ((F_CPU) / (prescaler)))))
 #define CTC_MODE_VALUE(n_seconds, prescaler) ((int)(((n_seconds) * ((F_CPU) / (prescaler))) - (1UL)))
 
@@ -42,9 +48,20 @@ enum MY_ADC
 
 // int const JOYSTICK_AXIS_X = A0;
 // int const JOYSTICK_AXIS_Y = A1;
+
+
 unsigned int x_axis_adc0 = 0;
 unsigned int y_axis_adc1 = 0;
 
+int const UP_BTN = 2;
+int const DOWN_BTN = 4;
+int const LEFT_BTN = 5;
+int const RIGHT_BTN = 3;
+int const E_BTN = 6;
+int const F_BTN = 7;
+int const JOYSTICK_BTN = 8;
+
+bool is_up_pressed = false;
 
 ISR(ADC_vect){
 	// up
@@ -56,6 +73,7 @@ ISR(ADC_vect){
 	// btn
 	// x
 	// y
+
 	if (current == ZERO) {
 		x_axis_adc0 = ADCL + (ADCH << 8);
 		current = ONE;
@@ -65,8 +83,8 @@ ISR(ADC_vect){
 		current = ZERO;
 		ADMUX &= ~(1 << MUX0);
 	}
-	
-	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", 1, 0, 0, 0, 0, 0, 0, x_axis_adc0, y_axis_adc1);
+
+	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", is_up_pressed, 0, 0, 0, 0, 0, 0, x_axis_adc0, y_axis_adc1);
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
@@ -140,6 +158,16 @@ long map(long x, long in_min, long in_max, long out_min, long out_max) {
 
 int main(void)
 {
+	DDRB = 0;   // make Port B an input
+	DDRD = 0b00000011; // make Port B an input
+	SET_NTH_BIT_TO_ONE(PORTD, UP_BTN);
+// 	int const  = 2;
+// int const DOWN_BTN = 4;
+// int const LEFT_BTN = 5;
+// int const RIGHT_BTN = 3;
+// int const E_BTN = 6;
+// int const F_BTN = 7;
+
 	DDRC = 0;	   // make Port C an input for ADC input
 
 	adc_init_interupt_mode();
@@ -149,8 +177,13 @@ int main(void)
 	
 	ADCSRA |= (1<<ADSC); //start conversion
 
+	unsigned char current_pd = 0;
+	
 	while (1)
 	{
+		current_pd = PIND;
+		// All buttons have pull-up resistors and pull to ground when pressed.
+		is_up_pressed = IS_NTH_BIT_ZERO(current_pd, UP_BTN);
 	}
 
 	return 0;
