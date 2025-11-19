@@ -19,7 +19,6 @@ void usart_interrupt_init()
 	UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);  // no parity, 1 stop bit, 8-bit data
 	// UBRR0 = UBRR_VALUE_LOW_SPEED(9600);
 	
-
 	UCSR0A = (1<<U2X0); //Double speed mode USART0
 	UBRR0 = UBRR_VALUE_DOUBLE_SPEED(115200);
 
