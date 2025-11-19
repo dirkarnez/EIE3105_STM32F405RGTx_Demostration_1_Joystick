@@ -37,8 +37,15 @@ void usart_interrupt_init()
 
 
 ISR(ADC_vect){
-	// PORTD = ADCL; //give the low byte to PORTD
-	// PORTB = ADCH; //give the high byte to PORTB
+	// up
+	// down
+	// left
+	// right
+	// e
+	// f
+	// btn
+	// x
+	// y
 	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", 0, 0, 0, 0, 0, 0, 0, ADCL + (ADCH << 8), 0);
 
 	ADCSRA |= (1<<ADSC); //start conversion
@@ -112,14 +119,8 @@ long map(long x, long in_min, long in_max, long out_min, long out_max) {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-
-// snprintf(buffer, sizeof(buffer), "%d", 10);
-
 int main(void)
 {
-	// DDRB = 0xFF;   // make Port B an output
-	// DDRD = 0xFF;   // make Port D an output
-
 	DDRC = 0;	   // make Port C an input for ADC input
 
 	adc_init_interupt();
@@ -131,11 +132,6 @@ int main(void)
 
 	while (1)
 	{
-		// ADCSRA |= (1 << ADSC);						// start conversion
-		// while ((ADCSRA & (1 << ADIF)) == 0);		// wait for conversion to finish
-		// ADCSRA |= (1 << ADIF);  
-		// PORTD = ADCL;								// give the low byte to PORTD
-		// PORTB = ADCH;								// give the high byte to PORTB
 	}
 
 	return 0;
