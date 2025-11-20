@@ -65,15 +65,26 @@ uint8_t adc_index = 0;  // Current index for buffer
 uint16_t smoothed_ADC1Array[2]; // Array to store the smoothed voltage and current values
 char tx_buffer[17] = {0}; // Buffer to store received data
 
-bool is_up_pressed = false;
-bool is_right_pressed = false;
-bool is_down_pressed = false;
-bool is_left_pressed = false;
-bool is_e_pressed = false;
-bool is_f_pressed = false;
-bool is_joystick_pressed = false;
+//bool is_up_pressed = false;
+//bool is_right_pressed = false;
+//bool is_down_pressed = false;
+//bool is_left_pressed = false;
+//bool is_e_pressed = false;
+//bool is_f_pressed = false;
+//bool is_joystick_pressed = false;
+//unsigned int x_axis_adc0 = 0;
+//unsigned int y_axis_adc1 = 0;
+
+unsigned int is_up_pressed = false;
+unsigned int is_right_pressed = false;
+unsigned int is_down_pressed = false;
+unsigned int is_left_pressed = false;
+unsigned int is_e_pressed = false;
+unsigned int is_f_pressed = false;
+unsigned int is_joystick_pressed = false;
 unsigned int x_axis_adc0 = 0;
 unsigned int y_axis_adc1 = 0;
+
 
 // OLED Display
 char buffer[20]; // String buffer for formatted output on the OLED screen
@@ -299,6 +310,7 @@ void substr(char *dest, const char *src, unsigned int start, unsigned int count)
     dest[count] = 0;
 }
 
+/*
 void parse_usart_string(
 	const char *usart_string,
 	bool* is_up_pressed_ptr,
@@ -338,7 +350,7 @@ void parse_usart_string(
 	*is_e_pressed_ptr = (is_e_pressed > 0);
 	*is_f_pressed_ptr = (is_f_pressed > 0);
 	*is_joystick_pressed_ptr = (is_joystick_pressed > 0);
-}
+}*/
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -346,7 +358,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 		// memset(tx_buffer, 0, sizeof(tx_buffer));
 		HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer)); // Restart the reception process
-
+		/*
 		parse_usart_string(
 			tx_buffer,
 			&is_up_pressed,
@@ -359,6 +371,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			&x_axis_adc0,
 			&y_axis_adc1
 		);
+		*/
+
 	}
 }
 
@@ -513,7 +527,7 @@ int main(void)
 
 		HCSR04_Read();
 
-		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%d cm",
+		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%dcm",
 				tracker_marking(ADC2Array[0]),
 				tracker_marking(ADC2Array[1]),
 				tracker_marking(ADC2Array[2]),
@@ -521,11 +535,31 @@ int main(void)
 				tracker_marking(ADC2Array[4]),
 				Distance
 		);
+		ssd1306_SetCursor(0, 0);
+		ssd1306_WriteString(buffer, Font_11x18, White);
+
+
+		// [STM32 UART Receive via IDLE Line – Interrupt & DMA Tutorial](https://controllerstech.com/stm32-uart-5-receive-data-using-idle-line/)
+	    sscanf(tx_buffer, "%01d%01d%01d%01d%01d%01d%01d%04d%04d\n",
+	        &is_up_pressed,
+	        &is_down_pressed,
+	        &is_left_pressed,
+	        &is_right_pressed,
+	        &is_e_pressed,
+	        &is_f_pressed,
+	        &is_joystick_pressed,
+	        &x_axis_adc0,
+	        &y_axis_adc1
+	    );
+
+		// snprintf(buffer, sizeof(buffer), "%d, %d", x_axis_adc0, y_axis_adc1); // 4,294,967,295
+
+		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
+		ssd1306_WriteString(tx_buffer, Font_11x18, White);
 
 	//	snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
-		ssd1306_SetCursor(0, 0);
-		ssd1306_WriteString(buffer, Font_11x18, White);
+
 		ssd1306_UpdateScreen();
 		// Write your code below
 
