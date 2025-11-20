@@ -63,7 +63,17 @@ uint16_t adc_voltage_buffer	[WINDOW_SIZE] = { 0 }; // Buffer for voltage reading
 uint16_t adc_current_buffer[WINDOW_SIZE] = { 0 }; // Buffer for current readings
 uint8_t adc_index = 0;  // Current index for buffer
 uint16_t smoothed_ADC1Array[2]; // Array to store the smoothed voltage and current values
-char tx_buffer[15]; // Buffer to store received data
+char tx_buffer[17] = {0}; // Buffer to store received data
+
+bool is_up_pressed = false;
+bool is_right_pressed = false;
+bool is_down_pressed = false;
+bool is_left_pressed = false;
+bool is_e_pressed = false;
+bool is_f_pressed = false;
+bool is_joystick_pressed = false;
+unsigned int x_axis_adc0 = 0;
+unsigned int y_axis_adc1 = 0;
 
 // OLED Display
 char buffer[20]; // String buffer for formatted output on the OLED screen
@@ -279,15 +289,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	}
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	if(huart->Instance == USART2)
-	{
-		// memset(tx_buffer, 0, sizeof(tx_buffer));
-		HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer)); // Restart the reception process
-	}
-}
-
 void substr(char *dest, const char *src, unsigned int start, unsigned int count) {
 	/*
 		 //  char s[] = "121111110231023" ;
@@ -298,7 +299,71 @@ void substr(char *dest, const char *src, unsigned int start, unsigned int count)
     dest[count] = 0;
 }
 
+void parse_usart_string(
+	const char *usart_string,
+	bool* is_up_pressed_ptr,
+	bool* is_right_pressed_ptr,
+	bool* is_down_pressed_ptr,
+	bool* is_left_pressed_ptr,
+	bool* is_e_pressed_ptr,
+	bool* is_f_pressed_ptr,
+	bool* is_joystick_pressed_ptr,
+	unsigned int* x_axis_adc0_ptr,
+	unsigned int* y_axis_adc1_ptr)
+{
+	unsigned int is_up_pressed = 0;
+	unsigned int is_right_pressed = 0;
+	unsigned int is_down_pressed = 0;
+	unsigned int is_left_pressed = 0;
+	unsigned int is_e_pressed = 0;
+	unsigned int is_f_pressed = 0;
+	unsigned int is_joystick_pressed = 0;
+
+	sscanf(usart_string, "%01d%01d%01d%01d%01d%01d%01d%04d%04d\n",
+		&is_up_pressed,
+		&is_down_pressed,
+		&is_left_pressed,
+		&is_right_pressed,
+		&is_e_pressed,
+		&is_f_pressed,
+		&is_joystick_pressed,
+		x_axis_adc0_ptr,
+		y_axis_adc1_ptr
+	);
+
+	*is_up_pressed_ptr = (is_up_pressed > 0);
+	*is_right_pressed_ptr = (is_right_pressed > 0);
+	*is_down_pressed_ptr = (is_down_pressed > 0);
+	*is_left_pressed_ptr = (is_left_pressed > 0);
+	*is_e_pressed_ptr = (is_e_pressed > 0);
+	*is_f_pressed_ptr = (is_f_pressed > 0);
+	*is_joystick_pressed_ptr = (is_joystick_pressed > 0);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == USART2)
+	{
+		// memset(tx_buffer, 0, sizeof(tx_buffer));
+		HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer)); // Restart the reception process
+
+		parse_usart_string(
+			tx_buffer,
+			&is_up_pressed,
+			&is_right_pressed,
+			&is_down_pressed,
+			&is_left_pressed,
+			&is_e_pressed,
+			&is_f_pressed,
+			&is_joystick_pressed,
+			&x_axis_adc0,
+			&y_axis_adc1
+		);
+	}
+}
+
 char tracker_marking(uint16_t adc_value) {
+	// mid-point of 12-bit ADC
 	return adc_value < 2048 ? '-' : '*';
 }
 
@@ -447,16 +512,15 @@ int main(void)
 //		}
 
 		HCSR04_Read();
-//		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%.2f-%ld",
-//				tracker_marking(ADC2Array[0]),
-//				tracker_marking(ADC2Array[1]),
-//				tracker_marking(ADC2Array[2]),
-//				tracker_marking(ADC2Array[3]),
-//				tracker_marking(ADC2Array[4]),
-//				distance,
-//				ms_count
-//		);
-		snprintf(buffer, sizeof(buffer), "%d cm", Distance);
+
+		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%d cm",
+				tracker_marking(ADC2Array[0]),
+				tracker_marking(ADC2Array[1]),
+				tracker_marking(ADC2Array[2]),
+				tracker_marking(ADC2Array[3]),
+				tracker_marking(ADC2Array[4]),
+				Distance
+		);
 
 	//	snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
