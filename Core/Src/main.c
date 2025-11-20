@@ -168,24 +168,70 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 uint32_t ultrasonic_counter = 0;
 
 float distance = 0.0f;
+bool is_working = false;
 
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
-	if (htim->Instance == TIM8) {
-		if (!has_captured_ultrasonic_rising_edge) {
-			rising_edge_instant = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-			has_captured_ultrasonic_rising_edge = true;
+//void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
+//	if (htim->Instance == TIM8) {
+//		if (!has_captured_ultrasonic_rising_edge) {
+//			rising_edge_instant = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+//			has_captured_ultrasonic_rising_edge = true;
+//			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
+//            // HAL_TIM_IC_Start_IT(htim, TIM_CHANNEL_1);
+//		} else if (has_captured_ultrasonic_rising_edge) {
+//			falling_edge_instant = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+//			has_captured_ultrasonic_rising_edge = false;
+//			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+//			__HAL_TIM_SET_COUNTER(htim, 0);  // reset counter
+//			HAL_TIM_IC_Stop_IT(htim, TIM_CHANNEL_1);
+//			// __HAL_TIM_DISABLE_IT(&htim1, TIM_IT_CC1);
+//			distance = (((falling_edge_instant > rising_edge_instant) ? 0 : 0xFFFF) + falling_edge_instant - rising_edge_instant) * 0.017;  // cm
+//
+//			ultrasonic_counter = 0;
+//			HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
+//			is_working = false;
+//		}
+//	}
+//}
+
+uint32_t IC_Val1 = 0;
+uint32_t IC_Val2 = 0;
+uint32_t Difference = 0;
+uint8_t Is_First_Captured = 0;  // is the first value captured ?
+uint8_t Distance  = 0;
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)  // if the interrupt source is channel1
+	{
+		if (Is_First_Captured==0) // if the first value is not captured
+		{
+			IC_Val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1); // read the first value
+			Is_First_Captured = 1;  // set the first captured as true
+			// Now change the polarity to falling edge
 			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
-            HAL_TIM_IC_Start_IT(htim, TIM_CHANNEL_1);
-		} else if (has_captured_ultrasonic_rising_edge) {
-			falling_edge_instant = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-			__HAL_TIM_SET_COUNTER(htim, 0);  // reset counter
-			HAL_TIM_IC_Stop_IT(htim, TIM_CHANNEL_1);
-			distance = (((falling_edge_instant > rising_edge_instant) ? 0 : 0xFFFF) + falling_edge_instant - rising_edge_instant) * .017;  // cm
-			has_captured_ultrasonic_rising_edge = false;
+		}
 
-			ultrasonic_counter = 0;
-			HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
+		else if (Is_First_Captured==1)   // if the first is already captured
+		{
+			IC_Val2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);  // read second value
+			__HAL_TIM_SET_COUNTER(htim, 0);  // reset the counter
+
+			if (IC_Val2 > IC_Val1)
+			{
+				Difference = IC_Val2-IC_Val1;
+			}
+
+			else if (IC_Val1 > IC_Val2)
+			{
+				Difference = (0xffff - IC_Val1) + IC_Val2;
+			}
+
+			Distance = Difference * .034/2;
+			Is_First_Captured = 0; // set it back to false
+
+			// set polarity to rising edge
+			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+			//__HAL_TIM_DISABLE_IT(&htim8, TIM_IT_CC1);
 		}
 	}
 }
@@ -256,6 +302,21 @@ char tracker_marking(uint16_t adc_value) {
 	return adc_value < 2048 ? '-' : '*';
 }
 
+void delay (uint16_t time)
+{
+	__HAL_TIM_SET_COUNTER(&htim8, 0);
+	while (__HAL_TIM_GET_COUNTER (&htim8) < time);
+}
+
+void HCSR04_Read (void)
+{
+	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);  // pull the TRIG pin HIGH
+	delay(10);  // wait for 10 us
+	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);  // pull the TRIG pin low
+
+	__HAL_TIM_ENABLE_IT(&htim8, TIM_IT_CC1);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -321,7 +382,10 @@ int main(void)
 	HAL_ADC_Start_IT(&hadc1); // ADC interrupt handler
 	HAL_ADC_Start_IT(&hadc2); // ADC interrupt handler
 
+	HAL_TIM_IC_Init(&htim8);
 	HAL_TIM_IC_Start_IT(&htim8, TIM_CHANNEL_1);
+
+
 
 	ssd1306_Init();
 	ssd1306_Fill(White);
@@ -373,27 +437,28 @@ int main(void)
 		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
 		ssd1306_WriteString(buffer, Font_11x18, White);
 		*/
-		if (ultrasonic_counter >= 10) {
-			HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
 
-			__HAL_TIM_SET_CAPTUREPOLARITY(&htim8, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-			HAL_TIM_IC_Start_IT(&htim8, TIM_CHANNEL_1);
-		}
+//		if (ultrasonic_counter > 1000 && !is_working) {
+//			is_working = true;
+//
+//			HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
+//			__HAL_TIM_ENABLE_IT(&htim8, TIM_IT_CC1);
+//			__HAL_TIM_SET_CAPTUREPOLARITY(&htim8, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+//		}
 
+		HCSR04_Read();
+//		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%.2f-%ld",
+//				tracker_marking(ADC2Array[0]),
+//				tracker_marking(ADC2Array[1]),
+//				tracker_marking(ADC2Array[2]),
+//				tracker_marking(ADC2Array[3]),
+//				tracker_marking(ADC2Array[4]),
+//				distance,
+//				ms_count
+//		);
+		snprintf(buffer, sizeof(buffer), "%d cm", Distance);
 
-
-		ultrasonic_reset();
-
-		snprintf(buffer, sizeof(buffer), "%c%c%c%c%c-%.2f",
-				tracker_marking(ADC2Array[0]),
-				tracker_marking(ADC2Array[1]),
-				tracker_marking(ADC2Array[2]),
-				tracker_marking(ADC2Array[3]),
-				tracker_marking(ADC2Array[4]),
-				distance
-		);
-
-		//snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
+	//	snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
 		ssd1306_SetCursor(0, 0);
 		ssd1306_WriteString(buffer, Font_11x18, White);
