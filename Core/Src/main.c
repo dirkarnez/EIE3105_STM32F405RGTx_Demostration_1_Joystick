@@ -351,30 +351,37 @@ void parse_usart_string(
 	*is_f_pressed_ptr = (is_f_pressed > 0);
 	*is_joystick_pressed_ptr = (is_joystick_pressed > 0);
 }*/
+uint8_t RxData[17];
+int indx = 0;
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-	if(huart->Instance == USART2)
-	{
-		// memset(tx_buffer, 0, sizeof(tx_buffer));
-		HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer)); // Restart the reception process
-		/*
-		parse_usart_string(
-			tx_buffer,
-			&is_up_pressed,
-			&is_right_pressed,
-			&is_down_pressed,
-			&is_left_pressed,
-			&is_e_pressed,
-			&is_f_pressed,
-			&is_joystick_pressed,
-			&x_axis_adc0,
-			&y_axis_adc1
-		);
-		*/
-
-	}
+	indx = Size;
+	HAL_UARTEx_ReceiveToIdle_IT(&huart2, &RxData, 17);
 }
+//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+//{
+//	if(huart->Instance == USART2)
+//	{
+//		// memset(tx_buffer, 0, sizeof(tx_buffer));
+//		HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer)); // Restart the reception process
+//		/*
+//		parse_usart_string(
+//			tx_buffer,
+//			&is_up_pressed,
+//			&is_right_pressed,
+//			&is_down_pressed,
+//			&is_left_pressed,
+//			&is_e_pressed,
+//			&is_f_pressed,
+//			&is_joystick_pressed,
+//			&x_axis_adc0,
+//			&y_axis_adc1
+//		);
+//		*/
+//
+//	}
+//}
 
 char tracker_marking(uint16_t adc_value) {
 	// mid-point of 12-bit ADC
@@ -481,7 +488,10 @@ int main(void)
 
 	memset(tx_buffer,'\0', sizeof(tx_buffer));
 
-    HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
+    // HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
+
+	// HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
+	HAL_UARTEx_ReceiveToIdle_IT(&huart2, &RxData, 17);
 
     ultrasonic_counter = 0;
     HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
@@ -540,22 +550,22 @@ int main(void)
 
 
 		// [STM32 UART Receive via IDLE Line – Interrupt & DMA Tutorial](https://controllerstech.com/stm32-uart-5-receive-data-using-idle-line/)
-	    sscanf(tx_buffer, "%01d%01d%01d%01d%01d%01d%01d%04d%04d\n",
-	        &is_up_pressed,
-	        &is_down_pressed,
-	        &is_left_pressed,
-	        &is_right_pressed,
-	        &is_e_pressed,
-	        &is_f_pressed,
-	        &is_joystick_pressed,
-	        &x_axis_adc0,
-	        &y_axis_adc1
-	    );
+//	    sscanf(tx_buffer, "%01d%01d%01d%01d%01d%01d%01d%04d%04d\n",
+//	        &is_up_pressed,
+//	        &is_down_pressed,
+//	        &is_left_pressed,
+//	        &is_right_pressed,
+//	        &is_e_pressed,
+//	        &is_f_pressed,
+//	        &is_joystick_pressed,
+//	        &x_axis_adc0,
+//	        &y_axis_adc1
+//	    );
 
 		// snprintf(buffer, sizeof(buffer), "%d, %d", x_axis_adc0, y_axis_adc1); // 4,294,967,295
 
 		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
-		ssd1306_WriteString(tx_buffer, Font_11x18, White);
+		ssd1306_WriteString(RxData, Font_11x18, White);
 
 	//	snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
