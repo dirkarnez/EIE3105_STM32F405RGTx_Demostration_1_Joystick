@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdbool.h>
+#include <string.h>
 #include <stdio.h>
 #define F_CPU 16000000UL
 
@@ -17,7 +18,8 @@
 #define UBRR_VALUE_LOW_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (16UL)))-((double)(1UL))))
 #define UBRR_VALUE_DOUBLE_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (8L)))-((double)(1UL))))
 
-char buffer[17] = {0}; // 7 buttons + (2 * 10-bit adc) = 7 + (2 * 4) = 15 characters + newline + \0 = 17
+char buffer[50]; // 7 buttons + (2 * 10-bit adc) = 7 + (2 * 4) = 15 characters + newline + \0 = 17
+char tx_buffer[50]; // 7 buttons + (2 * 10-bit adc) = 7 + (2 * 4) = 15 characters + newline + \0 = 17
 
 void usart_init_interupt_mode()
 {
@@ -61,13 +63,15 @@ int const E_BTN = 6;
 int const F_BTN = 7;
 int const JOYSTICK_BTN = 0; // PB0 == D8
 
-char is_up_pressed = 0;
-char is_right_pressed = 0;
-char is_down_pressed = 0;
-char is_left_pressed = 0;
-char is_e_pressed = 0;
-char is_f_pressed = 0;
-char is_joystick_pressed = 0;
+bool is_up_pressed = 0;
+bool is_right_pressed = 0;
+bool is_down_pressed = 0;
+bool is_left_pressed = 0;
+bool is_e_pressed = 0;
+bool is_f_pressed = 0;
+bool is_joystick_pressed = 0;
+
+unsigned int i = 0;
 
 ISR(ADC_vect){
 	// up
@@ -89,18 +93,17 @@ ISR(ADC_vect){
 		current = ZERO;
 		ADMUX &= ~(1 << MUX0);
 	}
-
-	snprintf(buffer, sizeof(buffer), "u:%d d:%d l:%d r:%d e:%d f:%d j:%d x:%d y:%d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
+	
+	snprintf(buffer, sizeof(buffer), "u=%d d=%d l=%d r=%d e=%d f=%d j=%d x=%04d y=%04d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
+	
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
-unsigned int i = 0;
-
 ISR(USART_UDRE_vect)
 {
-	UDR0 = buffer[i];
+	UDR0 = tx_buffer[i];
 	i++;
-	i = i % sizeof(buffer);
+	i = i % sizeof(tx_buffer);
 };
 
 void adc_init_interupt_mode()
@@ -177,7 +180,10 @@ int main(void)
 	SET_NTH_BIT_TO_ONE(PORTB, JOYSTICK_BTN);
 
 	DDRC = 0;	   // make Port C an input for ADC input
-
+	
+	memset(buffer,'\0', sizeof(buffer));
+	memset(tx_buffer,'\0', sizeof(tx_buffer));
+	
 	adc_init_interupt_mode();
 	usart_init_interupt_mode();
 
@@ -201,6 +207,11 @@ int main(void)
 		is_e_pressed = IS_NTH_BIT_ZERO(current_pd, E_BTN);
 		is_f_pressed = IS_NTH_BIT_ZERO(current_pd, F_BTN);
 		is_joystick_pressed = IS_NTH_BIT_ZERO(current_pb, JOYSTICK_BTN);
+		
+    if (i == 0) {
+      memset(tx_buffer,'\0', sizeof(tx_buffer));
+      snprintf(tx_buffer, sizeof(tx_buffer), "%s", buffer);
+		}
 	}
 
 	return 0;
