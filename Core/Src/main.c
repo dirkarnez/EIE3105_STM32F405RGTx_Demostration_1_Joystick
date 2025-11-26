@@ -379,7 +379,7 @@ void parse_usart_incoming_stream(const char* stream, unsigned int length) {
     		if (stream[i] == fields[ei]) {
     			j = i + 2; //
                 for (;j <length; j++) {
-                    if (a[j] == ' ') {
+                    if (stream[j] == ' ') {
                         break;
                     }
                 }
@@ -540,8 +540,7 @@ int main(void)
 
     // HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
 
-	// HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
-	HAL_UARTEx_ReceiveToIdle_IT(&huart2, &RxData, 17);
+	HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
 
     ultrasonic_counter = 0;
     HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
