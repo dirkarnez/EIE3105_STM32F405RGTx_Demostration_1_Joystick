@@ -63,27 +63,19 @@ uint16_t adc_voltage_buffer	[WINDOW_SIZE] = { 0 }; // Buffer for voltage reading
 uint16_t adc_current_buffer[WINDOW_SIZE] = { 0 }; // Buffer for current readings
 uint8_t adc_index = 0;  // Current index for buffer
 uint16_t smoothed_ADC1Array[2]; // Array to store the smoothed voltage and current values
-char tx_buffer[17] = {0}; // Buffer to store received data
+char tx_buffer[30]; // Buffer to store received data
+char data_buffer[30]; // Buffer to do string operations
 
-//bool is_up_pressed = false;
-//bool is_right_pressed = false;
-//bool is_down_pressed = false;
-//bool is_left_pressed = false;
-//bool is_e_pressed = false;
-//bool is_f_pressed = false;
-//bool is_joystick_pressed = false;
-//unsigned int x_axis_adc0 = 0;
-//unsigned int y_axis_adc1 = 0;
 
-unsigned int is_up_pressed = false;
-unsigned int is_right_pressed = false;
-unsigned int is_down_pressed = false;
-unsigned int is_left_pressed = false;
-unsigned int is_e_pressed = false;
-unsigned int is_f_pressed = false;
-unsigned int is_joystick_pressed = false;
-unsigned int x_axis_adc0 = 0;
-unsigned int y_axis_adc1 = 0;
+unsigned int is_up_pressed = 0; // 'u'
+unsigned int is_right_pressed = 0; // 'r'
+unsigned int is_down_pressed = 0; // 'd'
+unsigned int is_left_pressed = 0;	// 'l'
+unsigned int is_e_pressed = 0; // 'e'
+unsigned int is_f_pressed = 0;	// 'f'
+unsigned int is_joystick_pressed = 0; // 'j'
+unsigned int x_axis_adc0 = 0; // 'x'
+unsigned int y_axis_adc1 = 0;	// 'y'
 
 
 // OLED Display
@@ -310,6 +302,18 @@ void substr(char *dest, const char *src, unsigned int start, unsigned int count)
     dest[count] = 0;
 }
 
+// substring(dest, "hello", 1, 3); // prints "el"
+void substring(char *dest, const char *src, unsigned int start, unsigned int end_exclusive) {
+	/*
+		 //  char s[] = "121111110231023" ;
+		 //  char t[1];
+		 //  substr(t, s, 1 , 1 );
+	*/
+	substr(dest, src, start, end_exclusive - start);
+}
+
+
+
 /*
 void parse_usart_string(
 	const char *usart_string,
@@ -351,14 +355,58 @@ void parse_usart_string(
 	*is_f_pressed_ptr = (is_f_pressed > 0);
 	*is_joystick_pressed_ptr = (is_joystick_pressed > 0);
 }*/
-uint8_t RxData[17];
-int indx = 0;
+
+void parse_usart_incoming_stream(const char* stream, unsigned int length) {
+    // char a[] = "a:1 b:2";
+	memset(data_buffer,'\0', sizeof(data_buffer));
+
+//	unsigned int is_up_pressed = 0; // 'u'
+//	unsigned int is_right_pressed = 0; // 'r'
+//	unsigned int is_down_pressed = 0; // 'd'
+//	unsigned int is_left_pressed = 0;	// 'l'
+//	unsigned int is_e_pressed = 0; // 'e'
+//	unsigned int is_f_pressed = 0;	// 'f'
+//	unsigned int is_joystick_pressed = 0; // 'j'
+//	unsigned int x_axis_adc0 = 0; // 'x'
+//	unsigned int y_axis_adc1 = 0;	// 'y'
+
+    char fields[] = { 'u', 'r', 'd', 'l', 'e', 'f', 'j', 'x', 'y' };
+
+    int i = 0;
+    int j = 0;
+    while (i < length) {
+    	for (int ei = 0; ei < sizeof(fields); ei++) {
+    		if (stream[i] == fields[ei]) {
+    			j = i + 2; //
+                for (;j <length; j++) {
+                    if (a[j] == ' ') {
+                        break;
+                    }
+                }
+                substring(data_buffer, stream, i + 2, j);
+                printf("%c: ->%s<-, ", stream[i], data_buffer);
+                // convert to int and set
+                switch(stream[i])
+                {
+                   case 'x':
+                	   sscanf(data_buffer, "%d\n",&x_axis_adc0);
+                	   break;
+                }
+    			break;
+    		}
+    	}
+        i++;
+    }
+}
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-	indx = Size;
-	HAL_UARTEx_ReceiveToIdle_IT(&huart2, &RxData, 17);
+	if(huart->Instance == USART2) {
+		parse_usart_incoming_stream(tx_buffer, sizeof(tx_buffer));
+		HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
+	}
 }
+
 //void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 //{
 //	if(huart->Instance == USART2)
@@ -487,6 +535,8 @@ int main(void)
 	HAL_Delay(1000);
 
 	memset(tx_buffer,'\0', sizeof(tx_buffer));
+	memset(data_buffer,'\0', sizeof(data_buffer));
+
 
     // HAL_UART_Receive_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
 
@@ -562,10 +612,10 @@ int main(void)
 //	        &y_axis_adc1
 //	    );
 
-		// snprintf(buffer, sizeof(buffer), "%d, %d", x_axis_adc0, y_axis_adc1); // 4,294,967,295
+		snprintf(buffer, sizeof(buffer), "x: %d", x_axis_adc0); // 4,294,967,295
 
 		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
-		ssd1306_WriteString(RxData, Font_11x18, White);
+		ssd1306_WriteString(buffer, Font_11x18, White);
 
 	//	snprintf(buffer, sizeof(buffer), "%s", tx_buffer);
 
