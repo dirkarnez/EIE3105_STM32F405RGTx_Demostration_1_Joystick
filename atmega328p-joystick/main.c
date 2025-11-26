@@ -61,13 +61,13 @@ int const E_BTN = 6;
 int const F_BTN = 7;
 int const JOYSTICK_BTN = 0; // PB0 == D8
 
-bool is_up_pressed = false;
-bool is_right_pressed = false;
-bool is_down_pressed = false;
-bool is_left_pressed = false;
-bool is_e_pressed = false;
-bool is_f_pressed = false;
-bool is_joystick_pressed = false;
+char is_up_pressed = 0;
+char is_right_pressed = 0;
+char is_down_pressed = 0;
+char is_left_pressed = 0;
+char is_e_pressed = 0;
+char is_f_pressed = 0;
+char is_joystick_pressed = 0;
 
 ISR(ADC_vect){
 	// up
@@ -90,7 +90,7 @@ ISR(ADC_vect){
 		ADMUX &= ~(1 << MUX0);
 	}
 
-	snprintf(buffer, sizeof(buffer), "%d%d%d%d%d%d%d%04d%04d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
+	snprintf(buffer, sizeof(buffer), "u:%d d:%d l:%d r:%d e:%d f:%d j:%d x:%d y:%d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
