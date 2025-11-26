@@ -63,8 +63,8 @@ uint16_t adc_voltage_buffer	[WINDOW_SIZE] = { 0 }; // Buffer for voltage reading
 uint16_t adc_current_buffer[WINDOW_SIZE] = { 0 }; // Buffer for current readings
 uint8_t adc_index = 0;  // Current index for buffer
 uint16_t smoothed_ADC1Array[2]; // Array to store the smoothed voltage and current values
-char tx_buffer[50]; // Buffer to store received data
-char data_buffer[50]; // Buffer to do string operations
+char tx_buffer[43]; // Buffer to store received data
+char data_buffer[43]; // Buffer to do string operations
 
 
 unsigned int is_up_pressed = 0; // 'u'
@@ -276,6 +276,8 @@ void HAL_SYSTICK_Callback(void) {
 		motor(-20000, -20000);
 	} else if (is_left_pressed == 1) {
 		motor(20000, 0);
+	} else {
+		motor(0, 0);
 	}
 }
 
@@ -328,8 +330,6 @@ void substring(char *dest, const char *src, unsigned int start, unsigned int end
 
 // char a[] = "a:1 b:2";
 void parse_usart_incoming_stream(const char* stream, unsigned int length) {
-    memset(data_buffer,'\0', sizeof(data_buffer));
-
     char fields[] = { 'u', 'r', 'd', 'l', 'e', 'f', 'j', 'x', 'y' };
 
     int i = 0;
@@ -343,37 +343,47 @@ void parse_usart_incoming_stream(const char* stream, unsigned int length) {
                         break;
                     }
                 }
+                memset(data_buffer,'\0', sizeof(data_buffer));
                 substring(data_buffer, stream, i + 2, j);
                 printf("%c: ->%s<-, ", stream[i], data_buffer);
                 // convert to int and set
                 switch(stream[i])
                 {
 					case 'u':
+						if (j - (i + 2 ) != 1) break;
 					   sscanf(data_buffer, "%d",&is_up_pressed);
 					   break;
 					case 'r':
+						if (j - (i + 2 ) != 1) break;
 					   sscanf(data_buffer, "%d",&is_right_pressed);
 					   break;
 					case 'd':
+						if (j - (i + 2 ) != 1) break;
 					   sscanf(data_buffer, "%d",&is_down_pressed);
 					   break;
 					case 'l':
+						if (j - (i + 2 ) != 1) break;
 					   sscanf(data_buffer, "%d",&is_left_pressed);
 					   break;
 					case 'e':
+						if (j - (i + 2 ) != 1) break;
 					   sscanf(data_buffer, "%d",&is_e_pressed);
 					   break;
 					case 'f':
+						if (j - (i + 2 ) != 1) break;
 					   sscanf(data_buffer, "%d",&is_f_pressed);
 					   break;
 					case 'j':
+						if (j - (i + 2 ) != 1) break;
 						sscanf(data_buffer, "%d",&is_joystick_pressed);
 					   break;
 					case 'x':
-						sscanf(data_buffer, "%d",&x_axis_adc0);
+						if (j - (i + 2 ) != 4) break;
+						sscanf(data_buffer, "%04d",&x_axis_adc0);
 						break;
 					case 'y':
-						sscanf(data_buffer, "%d",&y_axis_adc1);
+						if (j - (i + 2 ) != 4) break;
+						sscanf(data_buffer, "%04d",&y_axis_adc1);
 						break;
                 }
     			break;
@@ -383,10 +393,10 @@ void parse_usart_incoming_stream(const char* stream, unsigned int length) {
     }
 }
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
 	if(huart->Instance == USART2) {
-		parse_usart_incoming_stream(tx_buffer, sizeof(tx_buffer));
+		parse_usart_incoming_stream(tx_buffer, size);
 		HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
 	}
 }
@@ -562,7 +572,7 @@ int main(void)
 		ssd1306_WriteString(buffer, Font_11x18, White);
 
 		// [STM32 UART Receive via IDLE Line – Interrupt & DMA Tutorial](https://controllerstech.com/stm32-uart-5-receive-data-using-idle-line/)
-		snprintf(buffer, sizeof(buffer), "%d, %d", x_axis_adc0, y_axis_adc1); // 4,294,967,295
+		snprintf(buffer, sizeof(buffer), "%04d, %04d", x_axis_adc0, y_axis_adc1); // 4,294,967,295
 		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
 		ssd1306_WriteString(buffer, Font_11x18, White);
 
