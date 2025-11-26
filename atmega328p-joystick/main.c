@@ -1,11 +1,13 @@
 #ifdef __AVR_ATmega328P__
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #define F_CPU 16000000UL
+#include <util/delay.h>
 
 #define IS_NTH_BIT_ONE(TARGET, NTH) (((TARGET) & (1 << NTH)) == (1 << NTH))
 #define IS_NTH_BIT_ZERO(TARGET, NTH) (!(((TARGET) & (1 << NTH)) == (1 << NTH)))
@@ -19,8 +21,54 @@
 #define UBRR_VALUE_LOW_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (16UL)))-((double)(1UL))))
 #define UBRR_VALUE_DOUBLE_SPEED(UART_BAUDRATE) ((unsigned char)(((F_CPU)/((UART_BAUDRATE) * (8L)))-((double)(1UL))))
 
-char buffer[50]; // 7 buttons + (2 * 10-bit adc) = 7 + (2 * 4) = 15 characters + newline + \0 = 17
-char tx_buffer[50]; // 7 buttons + (2 * 10-bit adc) = 7 + (2 * 4) = 15 characters + newline + \0 = 17
+char buffer[43]; 
+
+typedef struct {
+    char buffer[50];
+    int head; // Index where the next character will be written
+    int tail; // Index where the next character will be read
+    int size;
+    int count; // Current number of characters in the buffer
+} RingBuffer;
+
+RingBuffer rb;
+
+void ring_buffer_init(RingBuffer *rb) {
+    if (rb == NULL) return;
+    memset(rb->buffer, 0, sizeof(rb->buffer));
+    rb->head = 0;
+    rb->tail = 0;
+    rb->count = 0;
+    rb->size = 50;
+}
+
+void enqueue_char(RingBuffer *rb, char data) {
+    if (rb->count == rb->size) {
+        // Buffer is full, overwrite oldest data (optional, depending on desired behavior)
+        rb->tail = (rb->tail + 1) % rb->size; 
+        rb->count--; // Decrement count if overwriting
+    }
+    rb->buffer[rb->head] = data;
+    rb->head = (rb->head + 1) % rb->size;
+    rb->count++;
+}
+
+void enqueue_char_array(RingBuffer *rb, char* data, size_t data_length) {
+	for (size_t i = 0; i < data_length; i++) {
+		enqueue_char(rb, data[i]);
+	}
+}
+
+char dequeue(RingBuffer *rb) {
+    if (rb->count == 0) {
+        // Buffer is empty, handle error or return a special value
+        return '\0'; // Example: return null character
+    }
+    char data = rb->buffer[rb->tail];
+    rb->tail = (rb->tail + 1) % rb->size;
+    rb->count--;
+    return data;
+}
 
 void usart_init_interupt_mode()
 {
@@ -74,13 +122,6 @@ bool is_joystick_pressed = 0;
 
 unsigned int i = 0;
 
-typedef struct {
-    char buffer[50];
-    int head; // Index where the next character will be written
-    int tail; // Index where the next character will be read
-    int size;
-    int count; // Current number of characters in the buffer
-} RingBuffer;
 
 ISR(ADC_vect){
 	// up
@@ -103,21 +144,18 @@ ISR(ADC_vect){
 		ADMUX &= ~(1 << MUX0);
 	}
 	
-	// snprintf(buffer, sizeof(buffer), "u=%d d=%d l=%d r=%d e=%d f=%d j=%d x=%04d y=%04d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
+	snprintf(buffer, sizeof(buffer), "u=%d d=%d l=%d r=%d e=%d f=%d j=%d x=%04d y=%04d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
 	
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
-char current_char = '\0';
+
+
 
 ISR(USART_UDRE_vect)
 {
-	/*current_char = buffer[i];
-	if (current_char != '\0') {
-		UDR0 = current_char;
-		i = (i + 1) % (sizeof(buffer) - 1); // the \0 should still be here
-	}*/
-	UDR0 = dequeue(&rb);
+	UDR0 = buffer[i];
+	i = (i + 1) % (sizeof(buffer));
 };
 
 void adc_init_interupt_mode()
@@ -179,48 +217,9 @@ long map(long x, long in_min, long in_max, long out_min, long out_max) {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-
-void ring_buffer_init(RingBuffer *rb) {
-    if (rb == NULL) return;
-    memset(rb->buffer, 0, sizeof(rb->buffer));
-    rb->head = 0;
-    rb->tail = 0;
-    rb->count = 0;
-    rb->size = 50;
-}
-
-void enqueue_char(RingBuffer *rb, char data) {
-    if (rb->count == rb->size) {
-        // Buffer is full, overwrite oldest data (optional, depending on desired behavior)
-        rb->tail = (rb->tail + 1) % rb->size; 
-        rb->count--; // Decrement count if overwriting
-    }
-    rb->buffer[rb->head] = data;
-    rb->head = (rb->head + 1) % rb->size;
-    rb->count++;
-}
-
-void enqueue_char_array(RingBuffer *rb, char* data, size_t data_length) {
-	for (size_t i = 0; i < data_length; i++) {
-		enqueue_char(rb, data[i]);
-	}
-}
-
-char dequeue(RingBuffer *rb) {
-    if (rb->count == 0) {
-        // Buffer is empty, handle error or return a special value
-        return '\0'; // Example: return null character
-    }
-    char data = rb->buffer[rb->tail];
-    rb->tail = (rb->tail + 1) % rb->size;
-    rb->count--;
-    return data;
-}
-
 int main(void)
 {
-	RingBuffer rb;
-    ring_buffer_init(&rb);
+    //ring_buffer_init(&rb);
 
 
 	DDRB = 0;   // make Port B an input
@@ -265,16 +264,17 @@ int main(void)
 		is_joystick_pressed = IS_NTH_BIT_ZERO(current_pb, JOYSTICK_BTN);
 
 		
-		enqueue(&rb, '');
+		// enqueue(&rb, '');
 
-		if (is_up_pressed == 1) {
-			snprintf(buffer, sizeof(buffer), "u=%d\n", is_up_pressed);	
-		}
+		// if (is_up_pressed == 1) {
+		// 	snprintf(buffer, sizeof(buffer), "u=%d\n", is_up_pressed);	
+		// }
 		
     // if (i == 0) {
     //   memset(tx_buffer,'\0', sizeof(tx_buffer));
     //   snprintf(tx_buffer, sizeof(tx_buffer), "%s", buffer);
 	// 	}
+		_delay_ms(10);
 	}
 
 	return 0;
