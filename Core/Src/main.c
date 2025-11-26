@@ -271,7 +271,7 @@ void HAL_SYSTICK_Callback(void) {
 	if (is_up_pressed == 1) {
 		motor(20000, 20000);
 	} else if (is_right_pressed == 1) {
-		motor(0, 2000);
+		motor(0, 20000);
 	} else if (is_down_pressed == 1) {
 		motor(-20000, -20000);
 	} else if (is_left_pressed == 1) {
@@ -328,7 +328,7 @@ void substring(char *dest, const char *src, unsigned int start, unsigned int end
 
 // char a[] = "a:1 b:2";
 void parse_usart_incoming_stream(const char* stream, unsigned int length) {
-	memset(data_buffer,'\0', sizeof(data_buffer));
+    memset(data_buffer,'\0', sizeof(data_buffer));
 
     char fields[] = { 'u', 'r', 'd', 'l', 'e', 'f', 'j', 'x', 'y' };
 

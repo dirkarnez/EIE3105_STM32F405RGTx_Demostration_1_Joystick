@@ -29,17 +29,17 @@ void setup() {
 //===============================================================================
 void loop() {
   // Check each button input and print the status to the Serial Monitor Window
-  Serial.print("u="),Serial.print(digitalRead(UP_BTN));
-  Serial.print(" d="),Serial.print(digitalRead(DOWN_BTN));
-  Serial.print(" l="),Serial.print(digitalRead(LEFT_BTN));
-  Serial.print(" r="),Serial.print(digitalRead(RIGHT_BTN));
-  Serial.print(" e="),Serial.print(digitalRead(E_BTN));
-  Serial.print(" f="),Serial.print(digitalRead(F_BTN));
-  Serial.print(" j="),Serial.print(digitalRead(JOYSTICK_BTN));
+  Serial.print(" u="),Serial.print(digitalRead(UP_BTN) == 1 ? 0 : 1);
+  Serial.print(" d="),Serial.print(digitalRead(DOWN_BTN) == 1 ? 0 : 1);
+  Serial.print(" l="),Serial.print(digitalRead(LEFT_BTN) == 1 ? 0 : 1);
+  Serial.print(" r="),Serial.print(digitalRead(RIGHT_BTN) == 1 ? 0 : 1);
+  Serial.print(" e="),Serial.print(digitalRead(E_BTN) == 1 ? 0 : 1);
+  Serial.print(" f="),Serial.print(digitalRead(F_BTN) == 1 ? 0 : 1);
+  Serial.print(" j="),Serial.print(digitalRead(JOYSTICK_BTN) == 1 ? 0 : 1);
       
   // Print the full X/Y joystick values (0-1023)
   Serial.print(" x="),Serial.print(analogRead(JOYSTICK_AXIS_X));
-  Serial.print(" y="),Serial.println(analogRead(JOYSTICK_AXIS_Y)); 
-  Serial.print("\n"),Serial.println(analogRead(JOYSTICK_AXIS_Y)); 
+  Serial.print(" y="),Serial.print(analogRead(JOYSTICK_AXIS_Y)); 
+  Serial.print("\n"); 
   //delay(250);
  }
