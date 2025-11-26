@@ -22,23 +22,24 @@ int buttons[] = {UP_BTN, DOWN_BTN, LEFT_BTN, RIGHT_BTN, E_BTN, F_BTN, JOYSTICK_B
 void setup() {
   //Set all button pins as inputs with internal pullup resistors enabled.
   for (int i; i < 7; i++)  pinMode(buttons[i], INPUT_PULLUP);
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 //===============================================================================
 //  Main
 //===============================================================================
 void loop() {
   // Check each button input and print the status to the Serial Monitor Window
-  Serial.print("UP="),Serial.print(digitalRead(UP_BTN));
-  Serial.print("\tDOWN="),Serial.print(digitalRead(DOWN_BTN));
-  Serial.print("\tLEFT="),Serial.print(digitalRead(LEFT_BTN));
-  Serial.print("\tRIGHT="),Serial.print(digitalRead(RIGHT_BTN));
-  Serial.print("\tE="),Serial.print(digitalRead(E_BTN));
-  Serial.print("\tF="),Serial.print(digitalRead(F_BTN));
-  Serial.print("\tJOYSTICK BTN="),Serial.print(digitalRead(JOYSTICK_BTN));
+  Serial.print("u="),Serial.print(digitalRead(UP_BTN));
+  Serial.print(" d="),Serial.print(digitalRead(DOWN_BTN));
+  Serial.print(" l="),Serial.print(digitalRead(LEFT_BTN));
+  Serial.print(" r="),Serial.print(digitalRead(RIGHT_BTN));
+  Serial.print(" e="),Serial.print(digitalRead(E_BTN));
+  Serial.print(" f="),Serial.print(digitalRead(F_BTN));
+  Serial.print(" j="),Serial.print(digitalRead(JOYSTICK_BTN));
       
   // Print the full X/Y joystick values (0-1023)
-  Serial.print("\tX="),Serial.print(analogRead(JOYSTICK_AXIS_X));
-  Serial.print("\tY="),Serial.println(analogRead(JOYSTICK_AXIS_Y)); 
+  Serial.print(" x="),Serial.print(analogRead(JOYSTICK_AXIS_X));
+  Serial.print(" y="),Serial.println(analogRead(JOYSTICK_AXIS_Y)); 
+  Serial.print("\n"),Serial.println(analogRead(JOYSTICK_AXIS_Y)); 
   //delay(250);
  }

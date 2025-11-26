@@ -349,31 +349,31 @@ void parse_usart_incoming_stream(const char* stream, unsigned int length) {
                 switch(stream[i])
                 {
 					case 'u':
-					   sscanf(data_buffer, "%d\n",&is_up_pressed);
+					   sscanf(data_buffer, "%d",&is_up_pressed);
 					   break;
 					case 'r':
-					   sscanf(data_buffer, "%d\n",&is_right_pressed);
+					   sscanf(data_buffer, "%d",&is_right_pressed);
 					   break;
 					case 'd':
-					   sscanf(data_buffer, "%d\n",&is_down_pressed);
+					   sscanf(data_buffer, "%d",&is_down_pressed);
 					   break;
 					case 'l':
-					   sscanf(data_buffer, "%d\n",&is_left_pressed);
+					   sscanf(data_buffer, "%d",&is_left_pressed);
 					   break;
 					case 'e':
-					   sscanf(data_buffer, "%d\n",&is_e_pressed);
+					   sscanf(data_buffer, "%d",&is_e_pressed);
 					   break;
 					case 'f':
-					   sscanf(data_buffer, "%d\n",&is_f_pressed);
+					   sscanf(data_buffer, "%d",&is_f_pressed);
 					   break;
 					case 'j':
-						sscanf(data_buffer, "%d\n",&is_joystick_pressed);
+						sscanf(data_buffer, "%d",&is_joystick_pressed);
 					   break;
 					case 'x':
-						sscanf(data_buffer, "%d\n",&x_axis_adc0);
+						sscanf(data_buffer, "%d",&x_axis_adc0);
 						break;
 					case 'y':
-						sscanf(data_buffer, "%d\n",&y_axis_adc1);
+						sscanf(data_buffer, "%d",&y_axis_adc1);
 						break;
                 }
     			break;
@@ -561,10 +561,8 @@ int main(void)
 		ssd1306_SetCursor(0, 0);
 		ssd1306_WriteString(buffer, Font_11x18, White);
 
-
 		// [STM32 UART Receive via IDLE Line – Interrupt & DMA Tutorial](https://controllerstech.com/stm32-uart-5-receive-data-using-idle-line/)
-		snprintf(buffer, sizeof(buffer), "x:%d y:%d", x_axis_adc0, y_axis_adc1); // 4,294,967,295
-
+		snprintf(buffer, sizeof(buffer), "%d, %d", x_axis_adc0, y_axis_adc1); // 4,294,967,295
 		ssd1306_SetCursor(0, 30); // Set cursor below the GPIO states
 		ssd1306_WriteString(buffer, Font_11x18, White);
 
