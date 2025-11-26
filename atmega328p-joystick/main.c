@@ -94,16 +94,24 @@ ISR(ADC_vect){
 		ADMUX &= ~(1 << MUX0);
 	}
 	
-	snprintf(buffer, sizeof(buffer), "u=%d d=%d l=%d r=%d e=%d f=%d j=%d x=%04d y=%04d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
+	// snprintf(buffer, sizeof(buffer), "u=%d d=%d l=%d r=%d e=%d f=%d j=%d x=%04d y=%04d\n", is_up_pressed, is_down_pressed, is_left_pressed, is_right_pressed, is_e_pressed, is_f_pressed, is_joystick_pressed, x_axis_adc0, y_axis_adc1);
 	
 	ADCSRA |= (1<<ADSC); //start conversion
 }
 
+char current_char = '\0';
+
 ISR(USART_UDRE_vect)
 {
-	UDR0 = tx_buffer[i];
-	i++;
-	i = i % sizeof(tx_buffer);
+	current_char = buffer[i];
+	if (current_char != '\0') {
+		UDR0 = current_char;
+		i++;
+	} else {
+		i = 0;
+	}
+	
+	// i = i % sizeof(tx_buffer);
 };
 
 void adc_init_interupt_mode()
@@ -182,7 +190,7 @@ int main(void)
 	DDRC = 0;	   // make Port C an input for ADC input
 	
 	memset(buffer,'\0', sizeof(buffer));
-	memset(tx_buffer,'\0', sizeof(tx_buffer));
+	// memset(tx_buffer,'\0', sizeof(tx_buffer));
 	
 	adc_init_interupt_mode();
 	usart_init_interupt_mode();
@@ -207,11 +215,15 @@ int main(void)
 		is_e_pressed = IS_NTH_BIT_ZERO(current_pd, E_BTN);
 		is_f_pressed = IS_NTH_BIT_ZERO(current_pd, F_BTN);
 		is_joystick_pressed = IS_NTH_BIT_ZERO(current_pb, JOYSTICK_BTN);
-		
-    if (i == 0) {
-      memset(tx_buffer,'\0', sizeof(tx_buffer));
-      snprintf(tx_buffer, sizeof(tx_buffer), "%s", buffer);
+
+		if (is_up_pressed == 1) {
+			snprintf(buffer, sizeof(buffer), "u=%d\n", is_up_pressed);	
 		}
+		
+    // if (i == 0) {
+    //   memset(tx_buffer,'\0', sizeof(tx_buffer));
+    //   snprintf(tx_buffer, sizeof(tx_buffer), "%s", buffer);
+	// 	}
 	}
 
 	return 0;
