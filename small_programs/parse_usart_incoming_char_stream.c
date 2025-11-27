@@ -30,25 +30,32 @@ void parse_usart_incoming_stream(const char* stream, unsigned int length) {
     // char a[] = "a:1 b:2";
     memset(data_buffer,'\0', sizeof(data_buffer));
 
-    char fields[] = { 'a', 'b', 'l', 'l', 'o' };
+    char fields[] = { 'a', 'x' };
 
     int i = 0;
     int j = 0;
     while (i < length) {
     	for (int ei = 0; ei < sizeof(fields); ei++) {
     		if (stream[i] == fields[ei]) {
-    			j = i + 2; //
+    			j = i + 2;
                 for (;j < length; j++) {
-                    if (stream[j] == ' ') {
+                    if (stream[j] == ' ' || stream[j] == '\r' || stream[j] == '\n') {
                         break;
                     }
                 }
+                
+                printf("%d %d\n", i + 2 , j);
+                if (i + 2 >= (j - 1)) {
+                    break;
+                }
+
                 substring(data_buffer, stream, i + 2, j);
                 printf("%c: ->%s<-, ", stream[i], data_buffer);
                 // convert to int and set
                 switch(stream[i])
                 {
-                   case 'b':
+                   case 'x':
+                       printf("setting x...\n");
                 	   sscanf(data_buffer, "%d\n",&x_axis_adc0);
                 	   break;
                 }
@@ -60,7 +67,7 @@ void parse_usart_incoming_stream(const char* stream, unsigned int length) {
 }
 
 int main() {
-    char a[] = "a:1 b:2";
+    char a[] = "a:1 x:1";
 	memset(tx_buffer,'\0', sizeof(tx_buffer));
 
     parse_usart_incoming_stream(a, sizeof(a));
