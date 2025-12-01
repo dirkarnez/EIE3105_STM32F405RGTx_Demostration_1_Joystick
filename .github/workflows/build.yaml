@@ -1,13 +1,10 @@
-file(RENAME "$ENV{USERPROFILE}\\Downloads\\STM32CubeIDE-portable-v1.6.1.zip" "$ENV{USERPROFILE}\\Downloads\\STM32CubeIDE-portable-v1.6.1")
-
-
 name: build-actions-workflow
 on:
   push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-      - 'c*'
+    # # Sequence of patterns matched against refs/tags
+    # tags:
+    #   - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    #   - 'c*'
       
 permissions:
     contents: write
