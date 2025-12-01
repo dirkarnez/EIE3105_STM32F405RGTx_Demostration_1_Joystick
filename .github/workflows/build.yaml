@@ -1,0 +1,62 @@
+file(RENAME "$ENV{USERPROFILE}\\Downloads\\STM32CubeIDE-portable-v1.6.1.zip" "$ENV{USERPROFILE}\\Downloads\\STM32CubeIDE-portable-v1.6.1")
+
+
+name: build-actions-workflow
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'c*'
+      
+permissions:
+    contents: write
+    
+jobs:
+  test:
+    runs-on: windows-latest
+    env:
+      targetZip: ${{ github.event.repository.name }}-${{ github.ref_name }}-keil-mdk-v5.38a.zip
+    steps:
+      - uses: actions/checkout@v5
+      
+      - shell: cmd
+        run: |
+          cd /d "%USERPROFILE%\Downloads" &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.001" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.002" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.003" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.004" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.005" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.006" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.007" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.008" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.009" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.010" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.011" -L -O -J &&^
+          curl "https://github.com/dirkarnez/STM32CubeIDE-portable/releases/download/v1.6.1/STM32CubeIDE-portable-v1.6.1.zip.012" -L -O -J &&^
+          7z.exe x STM32CubeIDE-portable-v1.6.1.zip.001 -o"STM32CubeIDE-portable-v1.6.1" &&^
+          dir
+          
+      - working-directory: stm32f405rgtx-robotcar
+        shell: cmd
+        run: |
+          .\local-build.cmd &&^
+          cd .\.ci &&^
+          dir
+ 
+          
+      # - name: Archive Release
+      #   uses: thedoctor0/zip-release@master
+      #   with:
+      #     type: 'zip'
+      #     directory: "${{ github.repository }}/Objects"
+      #     filename: "${{ env.targetZip }}"
+        
+      # - name: Release prebuilt
+      #   uses: ncipollo/release-action@v1
+      #   with:
+      #     artifacts: "${{ github.repository }}/Objects/${{ env.targetZip }}"
+      #     allowUpdates: true
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+
