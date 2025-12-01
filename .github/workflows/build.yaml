@@ -38,18 +38,12 @@ jobs:
       - working-directory: stm32f405rgtx-robotcar
         shell: cmd
         run: |
-          .\local-build.cmd &&^
-          cd .\.ci &&^
-          dir
-
+          .\local-build.cmd
+          
       - working-directory: "stm32f405rgtx-robotcar/.ci"
         shell: cmd
         run: |
           dir
-
-
-          
- 
           
       # - name: Archive Release
       #   uses: thedoctor0/zip-release@master
