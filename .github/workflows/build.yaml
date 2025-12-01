@@ -41,6 +41,14 @@ jobs:
           .\local-build.cmd &&^
           cd .\.ci &&^
           dir
+
+      - working-directory: "stm32f405rgtx-robotcar/.ci"
+        shell: cmd
+        run: |
+          dir
+
+
+          
  
           
       # - name: Archive Release
@@ -49,11 +57,11 @@ jobs:
       #     type: 'zip'
       #     directory: "${{ github.repository }}/Objects"
       #     filename: "${{ env.targetZip }}"
-        
-      # - name: Release prebuilt
-      #   uses: ncipollo/release-action@v1
-      #   with:
-      #     artifacts: "${{ github.repository }}/Objects/${{ env.targetZip }}"
-      #     allowUpdates: true
-      #     token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Release prebuilt
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "RobotCar.elf"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
