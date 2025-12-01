@@ -55,7 +55,7 @@ jobs:
       - name: Release prebuilt
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "RobotCar.elf"
+          artifacts: "stm32f405rgtx-robotcar/.ci/RobotCar.*"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
