@@ -418,6 +418,10 @@ void delay (uint16_t time)
 
 void HCSR04_Read (void)
 {
+	// Clear the trigPin
+	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
+	delay(2);  // wait for 2 us
+	
 	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);  // pull the TRIG pin HIGH
 	delay(10);  // wait for 10 us
 	HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);  // pull the TRIG pin low
@@ -517,7 +521,6 @@ int main(void)
 	HAL_UARTEx_ReceiveToIdle_IT(&huart2, (uint8_t *)&tx_buffer, sizeof(tx_buffer));
 
     ultrasonic_counter = 0;
-    HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_SET);
 
   /* USER CODE END 2 */
 
