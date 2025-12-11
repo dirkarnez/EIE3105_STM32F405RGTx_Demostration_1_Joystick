@@ -571,6 +571,7 @@ int main(void)
 				tracker_marking(ADC2Array[4]),
 				Distance
 		);
+
 		ssd1306_SetCursor(0, 0);
 		ssd1306_WriteString(buffer, Font_11x18, White);
 
@@ -585,6 +586,41 @@ int main(void)
 	}
   /* USER CODE END 3 */
 }
+
+
+
+
+
+//   if(HAL_UART_Transmit_IT(&UartHandle, (uint8_t*)aTxStartMessage, TXSTARTMESSAGESIZE)!= HAL_OK)
+//   {
+//     /* Transfer error in transmission process */
+//     Error_Handler();
+//   }
+
+// while (HAL_UART_GetState(&UartHandle) != HAL_UART_STATE_READY);
+//  if(HAL_UART_Transmit_IT(&UartHandle, (uint8_t*)aRxBuffer, RXBUFFERSIZE)!= HAL_OK)
+//   {
+//     /* Transfer error in transmission process */
+//     Error_Handler();
+//   }
+
+
+
+// /**
+//   * @brief  Tx Transfer completed callback
+//   * @param  UartHandle: UART handle. 
+//   * @note   This example shows a simple way to report end of IT Tx transfer, and 
+//   *         you can add your own implementation. 
+//   * @retval None
+//   */
+// void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
+// {
+//   /* Turn LED1 on: Transfer in transmission process is correct */
+//   BSP_LED_On(LED1);
+// }
+
+
+
 
 /**
   * @brief System Clock Configuration
