@@ -590,7 +590,7 @@ int main(void)
 
 
 
-
+// [STM32 HAL库UART的使用 - cau_par - 博客园](https://www.cnblogs.com/stupidpeng/p/13169422.html)
 //   if(HAL_UART_Transmit_IT(&UartHandle, (uint8_t*)aTxStartMessage, TXSTARTMESSAGESIZE)!= HAL_OK)
 //   {
 //     /* Transfer error in transmission process */
